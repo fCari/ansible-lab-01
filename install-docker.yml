@@ -1,0 +1,58 @@
+---
+
+- name: Install Docker
+  hosts: webserver
+  become: true
+
+  tasks:
+
+  - name: Install Docker prerequisites
+    ansible.builtin.apt:
+      name:
+      - ca-certificates
+      - curl
+      state: present
+      update_cache: true
+
+  - name: Create Docker keyrings directory
+    ansible.builtin.file:
+      path: /etc/apt/keyrings
+      state: directory
+      mode: "0755"
+
+  - name: Download Docker GPG key
+    ansible.builtin.get_url:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      dest: /etc/apt/keyrings/docker.asc
+      mode: "0644"
+
+  - name: Add Docker repository
+    ansible.builtin.deb822_repository:
+      name: docker
+      types: deb
+      uris: https://download.docker.com/linux/ubuntu
+      suites: "{{ ansible_distribution_release }}"
+      components:
+      - stable
+      architectures:
+      - amd64
+      signed_by: /etc/apt/keyrings/docker.asc
+      state: present
+      enabled: true
+
+  - name: Install Docker
+    ansible.builtin.apt:
+      name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+      state: present
+      update_cache: true
+
+  - name: Start and enable Docker
+    ansible.builtin.service:
+      name: docker
+      state: started
+      enabled: true
